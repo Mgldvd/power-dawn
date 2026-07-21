@@ -1,0 +1,4 @@
+{{.CronBegin}}
+{{.Minute}} {{.Hour}} * * * /sbin/shutdown -h now
+0 * * * * {{.ScriptPath}}
+{{.CronEnd}}

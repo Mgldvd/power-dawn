@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Power-Dawn managed script — do not edit manually
+
+WAKE_TIME={{printf "%q" .WakeTime}}
+RTC_PATH={{printf "%q" .RTCPath}}
+LOG_PATH={{printf "%q" .LogPath}}
+
+now_epoch="$(/bin/date +%s)"
+wake_epoch="$(/bin/date -d "${WAKE_TIME} tomorrow" +%s)"
+
+current_raw="$(cat "$RTC_PATH" 2>/dev/null || true)"
+current_epoch="0"
+if [[ "$current_raw" =~ ^[0-9]+$ ]]; then
+    current_epoch="$current_raw"
+fi
+
+{
+    echo "---- $(/bin/date) ---- now=$now_epoch desired=$wake_epoch current=$current_epoch"
+
+    if [ "$current_epoch" -eq "$wake_epoch" ]; then
+        echo "OK: wakealarm already set"
+        exit 0
+    fi
+
+    # Try rtcwake first (uses ioctl RTC_WKALM_SET, more portable)
+    if command -v rtcwake >/dev/null 2>&1; then
+        rtcwake_out="$(rtcwake -m no -t "$wake_epoch" 2>&1)"
+        rtcwake_rc=$?
+        if [ "$rtcwake_rc" -eq 0 ]; then
+            verify="$(cat "$RTC_PATH" 2>/dev/null || true)"
+            echo "SET: wakealarm set via rtcwake — verify=$verify"
+            exit 0
+        else
+            echo "WARN: rtcwake failed (rc=$rtcwake_rc): $rtcwake_out"
+        fi
+    fi
+
+    # Fallback: direct sysfs write
+    sysfs_out="$( { printf '0\n' > "$RTC_PATH" && printf '%s\n' "$wake_epoch" > "$RTC_PATH"; } 2>&1 )"
+    sysfs_rc=$?
+    if [ "$sysfs_rc" -eq 0 ]; then
+        verify="$(cat "$RTC_PATH" 2>/dev/null || true)"
+        echo "SET: wakealarm set via sysfs — verify=$verify"
+        exit 0
+    else
+        echo "WARN: sysfs write failed (rc=$sysfs_rc): $sysfs_out"
+    fi
+
+    # Both methods failed — hardware/VM does not support RTC alarms
+    echo "NOTE: RTC alarm could not be set. This hardware or VM does not support wakealarm."
+    echo "NOTE: Automatic power-on will not work until run on bare-metal hardware with ACPI wake support."
+    exit 0
+} >> "$LOG_PATH" 2>&1

@@ -1,0 +1,34 @@
+min_version = "2024.11.1"
+
+[tools]
+go = "1.22.12"
+
+[tasks.build]
+description = "Build the Power-Dawn binary"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p dist
+go mod tidy
+go build -o dist/power-dawn ./src
+echo "Built dist/power-dawn with $(go version | awk '{print $3}')"
+'''
+
+[tasks.test]
+description = "Run all Go tests"
+run = "go test ./..."
+
+[tasks.vet]
+description = "Run Go static analysis"
+run = "go vet ./..."
+
+[tasks.check]
+description = "Run tests and static analysis"
+depends = ["test", "vet"]
+
+[tasks.run]
+description = "Build and run Power-Dawn as root"
+depends = ["build"]
+interactive = true
+run = "sudo ./dist/power-dawn"
