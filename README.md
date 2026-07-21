@@ -3,7 +3,7 @@
 A Linux Mint focused Go CLI/TUI for scheduling a daily shutdown and RTC-based automatic wake using `/sys/class/rtc/rtc0/wakealarm`. It automates the required setup so it does not have to be completed manually.
 
 ```bash
-curl -fsSL https://github.com/OWNER/Power-Dawn/releases/latest/download/power-dawn -o power-dawn && chmod +x power-dawn && sudo ./power-dawn
+curl -fsSL https://github.com/Mgldvd/power-dawn/releases/latest/download/power-dawn -o power-dawn && chmod +x power-dawn && sudo ./power-dawn
 ```
 
 <div align="center">
